@@ -99,6 +99,8 @@ Review this implementation plan and identify:
 
 Read the relevant source files in the codebase to verify assumptions the plan makes.
 
+IMPORTANT: When your finding depends on external facts (API model IDs, library versions, endpoint URLs, SDK compatibility, etc.), use WebSearch or WebFetch to verify the current state before reporting. Never flag something as wrong based solely on memorized knowledge — external data changes frequently.
+
 ## Output Format
 For each issue found:
 - **Severity**: CRITICAL / WARNING / NOTE
@@ -136,6 +138,8 @@ Review this implementation plan and verify:
    that the plan assumes but doesn't document?
 
 Read the relevant source files in the codebase to verify the plan matches reality.
+
+IMPORTANT: When your finding depends on external facts (API model IDs, library versions, endpoint URLs, SDK compatibility, etc.), use WebSearch or WebFetch to verify the current state before reporting. Never flag something as wrong based solely on memorized knowledge — external data changes frequently.
 
 ## Output Format
 For each gap found:
@@ -197,3 +201,4 @@ If you catch yourself thinking any of these, STOP:
 - **Not giving agents codebase access**: Agents need to READ files to verify assumptions
 - **Skipping re-review after revisions**: If you changed the plan, both agents review again
 - **Hiding review results from user**: Always include the Review Summary section
+- **Claiming external data is wrong without verifying**: When a finding depends on external facts (e.g., "this API model ID doesn't exist", "this library version is outdated", "this endpoint URL is invalid"), agents MUST use WebSearch or WebFetch to verify the current state before reporting. Training data has a knowledge cutoff and external APIs, model catalogs, package registries, and documentation change frequently. **Never flag something as wrong based solely on memorized knowledge — always fetch the latest data.**

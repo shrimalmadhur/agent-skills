@@ -69,6 +69,8 @@ Use the `Task` tool to launch ALL THREE agents **in parallel** (single message, 
 
 **CRITICAL: Each agent MUST read the actual source files, not just the diff.** Diffs lack surrounding context needed to catch integration issues.
 
+**CRITICAL: When a finding depends on external facts (model IDs, API endpoints, library versions, etc.), agents MUST use WebSearch or WebFetch to verify current state before reporting.** Training data has a knowledge cutoff — never flag something as wrong based solely on memorized knowledge.
+
 **CRITICAL: Agents MUST trace through wrappers, middleware, and abstractions before reporting.** A common false positive is claiming a vulnerability exists when an abstraction layer (e.g., a storage wrapper, middleware, or decorator) already handles it. Before reporting any finding about missing security, missing scoping, or missing validation, agents MUST:
 1. Read the CLAUDE.md / project docs for architectural context
 2. Grep for relevant patterns (e.g., if claiming "no tenant scoping", search for `tenant` / `TenantScoped` across the codebase)
@@ -247,3 +249,4 @@ Each agent is instructed to **actively try to break the code**, not just scan fo
 - **Suggesting changes to unchanged code**: Review scope is the diff, not the whole codebase
 - **Vague findings**: "Add error handling" is useless. "Line 42: `data.items` can be undefined when API returns 204, add `?? []`" is actionable
 - **Not reading CLAUDE.md**: The project's CLAUDE.md contains architectural context (storage patterns, auth flow, middleware stack) that prevents false assumptions
+- **Claiming external data is wrong without verifying**: When a finding depends on external facts (e.g., "this API model ID doesn't exist", "this library version is outdated", "this URL is invalid"), agents MUST use WebSearch or WebFetch to verify the current state before reporting. Training data has a knowledge cutoff and external APIs, model catalogs, package registries, and documentation change frequently. **Never flag something as wrong based solely on memorized knowledge — always fetch the latest data.** Examples: validating API model IDs against the provider's current docs, checking if a dependency version is actually deprecated, verifying that an API endpoint URL is still correct.
