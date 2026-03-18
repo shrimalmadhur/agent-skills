@@ -2,7 +2,7 @@ REPO_DIR := $(shell git rev-parse --show-toplevel)
 SKILLS_DIR := $(HOME)/.claude/skills
 
 # Skills to link (add new skill names here)
-SKILL_NAMES := adversarial-review verified-planning explain-code
+SKILL_NAMES := adversarial-review verified-planning explain-code qa-test-writer
 
 .PHONY: link unlink status
 
