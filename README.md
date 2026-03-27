@@ -39,6 +39,30 @@ Drafts implementation plans then dispatches two independent review agents to adv
 npx skills add shrimalmadhur/agent-skills
 ```
 
+## Local Development
+
+From the repo root, sync real skill directories into Codex so they survive restarts and are discoverable as normal Codex skills:
+
+```bash
+make sync-codex-skills
+```
+
+That target calls [`scripts/sync_codex_skills.sh`](scripts/sync_codex_skills.sh), which copies every skill directory containing a `SKILL.md` from [`skills/`](skills/) into `~/.codex/skills`.
+
+You can also run the script directly:
+
+```bash
+bash scripts/sync_codex_skills.sh ./skills ~/.codex/skills
+```
+
+If you still use Claude-compatible symlinks, keep using:
+
+```bash
+make link
+```
+
+`make status` shows both the Claude symlink state and whether each skill has been synced into Codex.
+
 ## Usage
 
 Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
