@@ -22,8 +22,9 @@ Multi-agent adversarial review that dispatches three independent specialist agen
 1. Get the diff (workspace diff or specified files)
 2. Dispatch THREE review agents in parallel
 3. Collect all findings
-4. Deduplicate and rank by severity
-5. Present consolidated report with file:line references
+4. **Independently verify every finding** (read the code yourself, check domain assumptions)
+5. Deduplicate and rank by severity
+6. Present consolidated report with file:line references
 
 ```dot
 digraph review {
@@ -36,8 +37,9 @@ digraph review {
     a2 [label="Agent B: Security & Edge Cases\n(injection, auth, boundaries, errors)"];
     a3 [label="Agent C: Design & Performance\n(architecture, coupling, perf, maintainability)"];
     collect [label="3. Collect all findings"];
-    dedup [label="4. Deduplicate & rank by severity"];
-    report [label="5. Present consolidated report\nwith file:line references"];
+    verify [label="4. VERIFY every finding\n(read code, check assumptions,\ntest claims yourself)"];
+    dedup [label="5. Deduplicate & rank by severity"];
+    report [label="6. Present consolidated report\nwith file:line references"];
 
     diff -> dispatch;
     dispatch -> a1;
@@ -46,7 +48,8 @@ digraph review {
     a1 -> collect;
     a2 -> collect;
     a3 -> collect;
-    collect -> dedup;
+    collect -> verify;
+    verify -> dedup;
     dedup -> report;
 }
 ```
@@ -193,13 +196,30 @@ IMPORTANT: Do NOT suggest adding comments, docstrings, or type annotations to un
 
 Wait for all three agents to complete. Read each agent's full output.
 
-### Step 4: Deduplicate and Rank
+### Step 4: Independently Verify Every Finding
+
+**CRITICAL: Do NOT blindly trust agent findings.** Agents make confident-sounding claims that are wrong — especially about domain semantics, equivalence of concepts, and "should be the same" assertions. You MUST independently verify every finding before including it in the report.
+
+For each finding, before accepting it:
+
+1. **Read the actual code yourself** at the file:line the agent references. Confirm the issue exists in the current code, not just in the agent's interpretation of the diff.
+2. **Challenge domain claims.** If an agent says "X and Y are the same thing" or "X should map to Y", ask yourself: do I actually know this is true? If not, do NOT include it — flag it as unverified or drop it. Agents frequently conflate distinct domain concepts (e.g., claiming "net profit" and "net income" are identical, or that two API fields are semantically equivalent when they are not).
+3. **Verify technical claims.** If an agent says "this function can receive null here", trace the call chain yourself to confirm. If an agent says "this will crash", mentally execute the code path with the claimed input.
+4. **Check scope.** Drop findings about unchanged code that is not part of this diff unless it directly interacts with changed code.
+5. **Test when possible.** For claims about specific inputs causing failures, run a quick test or mental execution to confirm.
+
+**Classification after verification:**
+- **Verified**: You confirmed the issue exists by reading the code yourself. Include in report.
+- **Plausible but unverified**: The claim is technically reasonable but you cannot confirm the domain/semantic assumption. Include in report but mark as "unverified — needs domain confirmation" so the user can decide.
+- **False positive**: You read the code and the issue does not exist, or the agent's domain assumption is wrong. Drop it entirely.
+
+### Step 5: Deduplicate and Rank
 
 - Remove duplicate findings across agents
 - Rank by severity: CRITICAL > WARNING > NOTE
 - Within each severity, group by file
 
-### Step 5: Present Report
+### Step 6: Present Report
 
 Present a consolidated report:
 
@@ -243,8 +263,9 @@ Each agent is instructed to **actively try to break the code**, not just scan fo
 
 ## Common Mistakes
 
+- **Blindly trusting agent findings without independent verification**: This is the #1 source of bad reviews. Agents make confident claims about domain semantics ("these two metrics are the same thing"), code behavior ("this will crash"), and architecture ("this pattern is wrong") that sound authoritative but are wrong. You MUST read the code yourself and verify every finding before including it. Never consolidate agent output into a report without checking each claim. If you cannot verify a domain assumption, mark it as unverified rather than presenting it as fact.
 - **Reviewing only the diff without reading full files**: Agents MUST read the complete files to understand context
-- **Reporting issues handled by abstraction layers**: Before claiming "no tenant scoping" or "no auth check", trace the full call chain through wrappers, middleware, and base classes. A storage backend might be wrapped by `TenantScopedStorage`; a route might be protected by auth middleware. Read the actual wrapper/middleware implementation before reporting. **This is the #1 source of false positives.**
+- **Reporting issues handled by abstraction layers**: Before claiming "no tenant scoping" or "no auth check", trace the full call chain through wrappers, middleware, and base classes. A storage backend might be wrapped by `TenantScopedStorage`; a route might be protected by auth middleware. Read the actual wrapper/middleware implementation before reporting.
 - **Reporting low-confidence nitpicks**: Agents should only report issues they're genuinely confident about
 - **Suggesting changes to unchanged code**: Review scope is the diff, not the whole codebase
 - **Vague findings**: "Add error handling" is useless. "Line 42: `data.items` can be undefined when API returns 204, add `?? []`" is actionable
